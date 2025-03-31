@@ -68,6 +68,7 @@ class SpellingBeeViewModel: ObservableObject{
     @Published var isPangram: Bool = false
     @Published var percent: Double = 0
     @Published var rank: String = ""
+    @Published var notification: String = ""
     
     //UI Variables
     @Published var cellSideLength: CGFloat = 0
@@ -195,23 +196,29 @@ class SpellingBeeViewModel: ObservableObject{
     
     
     func submitWord(){
-        currentWord = currentWord.lowercased()
-        if(currentWord.count < 4 || currentWord.isEmpty){
+        let word = currentWord.lowercased()
+        if(word.count < 4 || word.isEmpty){
+            notification = "Too Short"
             print("Word must be >= 4 letters")
-        } else if(!currentWord.contains(centerLetter)){
+        } else if(!word.contains(centerLetter)){
+            notification = "Missing center letter"
             print("Word must contain center letter")
-        }else if (!validWords.contains(currentWord)){
+        }else if (!validWords.contains(word)){
+            notification = "Not in word list"
             print("Not a valid word")
-        } else if(wordsFormed.contains(currentWord)){
+        } else if(wordsFormed.contains(word)){
+            notification = "Already Found"
             print("Word already found")
         }else{
             print("Found word!")
-            let letterCount = currentWord.count
-            score += letterCount - 3
-            if(validPangrams.contains(currentWord)){
-                score += 7
+            let letterCount = word.count
+            var scoreAdd = 0
+            scoreAdd += letterCount - 3
+            if(validPangrams.contains(word)){
+                scoreAdd += 7
             }
-            wordsFormed.insert(currentWord)
+            score += scoreAdd
+            wordsFormed.insert(word)
             currentWord = ""
             
             percent = Double(score) / Double(maxScore) * 100
@@ -220,6 +227,7 @@ class SpellingBeeViewModel: ObservableObject{
             
             dump(wordsFormed)
             print("Score: \(score)")
+            notification = rank + "! +" + String(scoreAdd)
         }
     }
     
