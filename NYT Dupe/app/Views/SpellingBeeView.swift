@@ -39,6 +39,7 @@ struct SpellingBeeView: View {
                 }
             }
         }
+        .preferredColorScheme(.light)
     }
     
     private var LandscapeLayout: some View {
