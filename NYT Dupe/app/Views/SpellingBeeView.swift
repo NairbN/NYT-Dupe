@@ -23,11 +23,11 @@ struct SpellingBeeView: View {
                 
                 if viewModel.isGeneratingPuzzle {
                     VStack {
-                        Spacer() // Ensures the ProgressView is centered
+                        Spacer()
                         ProgressView("Generating Puzzle...")
                             .progressViewStyle(CircularProgressViewStyle())
                             .padding()
-                        Spacer() // Ensures the ProgressView is vertically centered
+                        Spacer()
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
