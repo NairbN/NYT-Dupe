@@ -29,6 +29,7 @@ struct PuzzleSettings {
     // Puzzle Generation Settings
     static let NUM_LETTERS = 7
     static let MIN_WORD_LENGTH = 4
+    static let MAX_WORD_LENGTH = 20
     static let MIN_NUM_SOLUTIONS = 20
     static let MAX_NUM_SOLUTIONS = 70
     
@@ -59,6 +60,7 @@ class SpellingBeeViewModel: ObservableObject{
     private var validWords = [String]()
     private var validPangrams = [String]()
     private var maxScore: Int = 0
+//    private var numLetterValid = [Int]()
 
     @Published var centerLetter: String = ""
     @Published var surroundingLetters: [String] = []
@@ -69,6 +71,7 @@ class SpellingBeeViewModel: ObservableObject{
     @Published var percent: Double = 0
     @Published var rank: String = ""
     @Published var notification: String = ""
+    @Published var letterValid: [Int] = []
     
     //UI Variables
     @Published var cellSideLength: CGFloat = 0
@@ -132,6 +135,7 @@ class SpellingBeeViewModel: ObservableObject{
                     self.surroundingLetters = surrounding
                     self.validWords = valid.valid
                     self.validPangrams = valid.pangrams
+                    self.letterValid = valid.numLetter
                     for word in valid.valid{
                         self.maxScore += word.count - 3
                         if(valid.pangrams.contains(word)){
@@ -173,15 +177,18 @@ class SpellingBeeViewModel: ObservableObject{
         return Array(shuffled)
     }
 
-    private func generateValidWords(center: String, surrounding: [String]) -> (isGood: Bool, valid: [String], pangrams: [String]) {
+    private func generateValidWords(center: String, surrounding: [String]) -> (isGood: Bool, valid: [String], pangrams: [String], numLetter: [Int]) {
         let validLetters = Set(surrounding + [center])
-
+        
+        
         let filteredWords = wordList.filter { word in
             word.contains(center) &&
             word.allSatisfy { validLetters.contains(String($0)) }
         }
         
         let validWordsSet = Set(filteredWords.filter { $0.count >= PuzzleSettings.MIN_WORD_LENGTH })
+        
+        let numLetter = getNumLetter(from: validWordsSet)
         
         let pangramSet = validWordsSet.filter { word in
             surrounding.allSatisfy{word.contains($0)} &&
@@ -191,24 +198,40 @@ class SpellingBeeViewModel: ObservableObject{
         let pangramArray = Array(pangramSet)
         let validWordsArray = Array(validWordsSet)
         
-        return (validWordsSet.count >= PuzzleSettings.MIN_NUM_SOLUTIONS && validWordsSet.count <= PuzzleSettings.MAX_NUM_SOLUTIONS && !pangramSet.isEmpty , validWordsArray, pangramArray)
+        return (validWordsSet.count >= PuzzleSettings.MIN_NUM_SOLUTIONS && validWordsSet.count <= PuzzleSettings.MAX_NUM_SOLUTIONS && !pangramSet.isEmpty , validWordsArray, pangramArray, numLetter)
     }
     
+    private func getNumLetter(from set: Set<String>) -> ([Int]){
+        var result = Array(repeating: 0, count: PuzzleSettings.MAX_WORD_LENGTH + 1)
+
+        for word in set {
+            let length = word.count
+            if length <= PuzzleSettings.MAX_WORD_LENGTH {
+                result[length] += 1
+            }
+        }
+
+        return result
+    }
     
     func submitWord(){
         let word = currentWord.lowercased()
         if(word.count < 4 || word.isEmpty){
             notification = "Too Short"
             print("Word must be >= 4 letters")
+            currentWord = ""
         } else if(!word.contains(centerLetter)){
             notification = "Missing center letter"
             print("Word must contain center letter")
+            currentWord = ""
         }else if (!validWords.contains(word)){
             notification = "Not in word list"
             print("Not a valid word")
+            currentWord = ""
         } else if(wordsFormed.contains(word)){
             notification = "Already Found"
             print("Word already found")
+            currentWord = ""
         }else{
             print("Found word!")
             let letterCount = word.count
@@ -220,6 +243,7 @@ class SpellingBeeViewModel: ObservableObject{
             score += scoreAdd
             wordsFormed.insert(word)
             currentWord = ""
+            letterValid = getNumLetter(from: Set(validWords).subtracting(wordsFormed))
             
             percent = Double(score) / Double(maxScore) * 100
             rank = PuzzleSettings.RANKS.first(where: { percent >= $0.threshold })?.rank ?? "Beginner"

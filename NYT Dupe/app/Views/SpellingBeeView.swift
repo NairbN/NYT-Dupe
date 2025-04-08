@@ -12,6 +12,7 @@ import CoreData
 struct SpellingBeeView: View {
     @ObservedObject var viewModel: SpellingBeeViewModel
     @State private var showNotification = false
+    @State private var showHint = false
     
     @State private var isLandscape = false
 
@@ -91,12 +92,20 @@ struct SpellingBeeView: View {
                         }
                     }
 
+
+            }
+            
+            ZStack{
+                HexagonGridView
+                
                 if showNotification {
                     NotificationView(notification: viewModel.notification)
                 }
+                if showHint{
+                    HintView(hints: viewModel.letterValid)
+                }
             }
             
-            HexagonGridView
             ActionButtons
         }
     }
@@ -155,34 +164,54 @@ struct SpellingBeeView: View {
     }
 
     private var ActionButtons: some View {
-        HStack {
-            Button(action: viewModel.delete) {
-                Text("Delete")
-            }
-            .buttonStyle(text: "Delete", action: viewModel.delete)
-
-            Button(action: viewModel.shuffleSurrounding) {
-                Text("Shuffle")
-            }
-            .buttonStyle(text: "Shuffle", action: viewModel.shuffleSurrounding)
-
-            Button(action: {
-                viewModel.submitWord()
-                showNotification = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    showNotification = false
+        VStack{
+            HStack {
+                Button(action: viewModel.delete) {
+                    Text("Delete")
                 }
-            }) {
-                Text("Enter")
+                .buttonStyle(text: "Delete", action: viewModel.delete)
+
+                Button(action: viewModel.shuffleSurrounding) {
+                    Text("Shuffle")
+                }
+                .buttonStyle(text: "Shuffle", action: viewModel.shuffleSurrounding)
+                
+                Button(action: {
+                    viewModel.submitWord()
+                    showNotification = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        showNotification = false
+                    }
+                }) {
+                    Text("Enter")
+                }
+                .buttonStyle(text: "Enter", action: {
+                    viewModel.submitWord()
+                    showNotification = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        showNotification = false
+                    }
+                })
             }
-            .buttonStyle(text: "Enter", action: {
-                viewModel.submitWord()
-                showNotification = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    showNotification = false
+            
+            Button(action: {
+                showHint = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    showHint = false
+                }
+            }){
+                Text ("Hint")
+            }
+            .buttonStyle(text: "Hint", action: {
+                showHint = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    showHint = false
                 }
             })
+            
+            
         }
+        
     }
 }
 
@@ -314,10 +343,10 @@ struct NotificationView: View{
     
     var body: some View {
         Text(notification)
-            .font(.system(size: 12)) // Small readable font
-            .foregroundColor(.white) // White text for contrast
-            .padding(6) // Adds padding for spacing inside the rectangle
-            .background(Color.black) // Black rectangle
+            .font(.system(size: 12))
+            .foregroundColor(.white)
+            .padding(6)
+            .background(Color.black)
             .offset(x: offsetX)
             .onAppear {
                 startShaking()
@@ -336,6 +365,29 @@ struct NotificationView: View{
             offsetX = 0
         }
     }
+}
+
+struct HintView: View{
+    var hints: [Int]
+    @State private var offsetX: CGFloat = 0
+    var displayString: String {
+        hints.enumerated()
+            .compactMap { index, count in
+                count > 0 ? "\(index)-Letter Words Left: \(count)" : nil
+            }
+            .joined(separator: "\n")
+    }
+    
+    var body: some View {
+        Text(displayString)
+            .font(.system(size: 12))
+            .foregroundColor(.black)
+            .padding(6)
+            .background(Color.yellow)
+            .fixedSize(horizontal: false, vertical: true)
+            .offset(x: offsetX)
+    }
+    
 }
 
 struct SpellingBeeView_Previews: PreviewProvider {
